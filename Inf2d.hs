@@ -109,12 +109,12 @@ walkSatRecursion gen sentence model prob n
 
 walkSat :: Sentence -> Float -> Int -> IO (Maybe (Model,Int))
 walkSat sentence prob n = do
-			gen <- getStdGen
-			let (rassign,gen') = (randomAssign gen (variablesOfSentence sentence))
-			let (res,gen'') = walkSatRecursion gen' sentence rassign prob n
-			setStdGen (gen'')
-			putStrLn $ show res
-			return res
+      gen <- getStdGen
+      let (rassign,gen') = (randomAssign gen (variablesOfSentence sentence))
+      let (res,gen'') = walkSatRecursion gen' sentence rassign prob n
+      setStdGen (gen'')
+      putStrLn $ show res
+      return res
 
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
@@ -123,16 +123,25 @@ walkSat sentence prob n = do
 
 -- SECTION 7.1 : Tautology Deletion
 
+-- Checks if clause is a tautology
+isTautology :: Clause -> Bool
+isTautology clause = or [isSymbol (complement symbol) clause | symbol <- clause]
+
+-- Removes tautologies from sentence using the above helper function
 removeTautologies :: Sentence -> Sentence
-removeTautologies = undefined
+removeTautologies sentence = filter (not . isTautology) sentence
+
 
 ---------------------------------------------------------------------------
 
 -- SECTION 7.2 : Pure Symbol Heuristic
-
 findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
-findPureSymbol = undefined
+findPureSymbol variables sentence model = if null var then Nothing else Just (var, sign)
+                  where LTR (sign, var) = head [ sym | [sym] <- sentence, isPure sym sentence]
 
+--Update so it takes into consideration the model and variables list
+isPure :: Symbol -> Sentence -> Bool
+isPure symbol sentence =  and [not (isSymbol (complement symbol) clause) | clause <- sentence]
 
 -- SECTION 7.3 : Unit Clause Heuristic
 
@@ -183,7 +192,6 @@ dpllSatisfiablev2 sentence = dpll variableSelectionHeuristic [(removeTautologies
 
 -- Examples of type Sentence which you can use to test the functions you develop
 
-f1 = [[LTR (True,"p"), LTR (True,"q")], [LTR (True,"p"), LTR (False,"p")], [LTR (True,"q")]]
 f2 = [[LTR (True,"p"), LTR (True,"q")], [LTR (True,"p"), LTR (True,"q"), LTR (True,"z")], [LTR (False,"z"), LTR (False,"w"), LTR (True,"k")], [LTR (False,"z"), LTR (False,"w"), LTR (True,"s")], [LTR (True,"p"), LTR (False,"q")]]
 f3 = [[LTR (True,"k"), LTR (False,"g"), LTR (True,"t")], [LTR (False,"k"), LTR (True,"w"), LTR (True,"z")], [LTR (True,"t"), LTR (True,"p")], [LTR (False,"p")], [LTR (True,"z"), LTR (True,"k"), LTR (False,"w")], [LTR (False,"z"), LTR (False,"k"), LTR (False,"w")], [LTR (False,"z"), LTR (True,"k"), LTR (True,"w")]]
 f4 = [[LTR (True,"p")], [LTR (False,"p")]]
