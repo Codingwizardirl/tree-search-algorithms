@@ -194,7 +194,25 @@ earlyTerminate sentence model = satisfiesSentence model sentence || falsifiesSen
 -- SECTION 7.5 : DPLL algorithm
 
 dpll :: (Node -> Variable) -> [Node] -> Int -> (Bool, Int)
-dpll heuristic nodes int = undefined
+dpll heuristic ((sentence, (variables, model)):xs) int
+              | earlyTerminate sentence model  = satisfiesSentence model sentence
+              | otherwise =
+                case findPureSymbol variables sentence model of
+                  Just (variable, value) -> dpll heuristic (xs ++ [(sentence,(delete variable variables, assign model variable value))]) (int = int + 1 )
+                  Nothing ->
+                    case findUnitClause sentence model of
+                      Just (variable, value) -> dpll heuristic (xs ++ [(sentence,(delete variable variables, assign model variable value))]) (int = int + 1 )
+                      Nothing ->
+                          (dpll heuristic (xs ++ [(sentence, ( delete chosenVariable variables, assign model chosenVariable True)) ]) (int = int + 1 ))
+                            ||
+                         (dpll heuristic (xs ++ [(sentence, ( delete chosenVariable variables, assign model chosenVariable False)) ]) (int = int + 1))
+                              where
+                                node = (sentence, (variables, model))
+                                chosenVariable = heuristic node
+
+
+
+
 
 ---------------------------------------------------------------------------
 
