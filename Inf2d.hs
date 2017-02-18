@@ -42,26 +42,31 @@ getSymbols = undefined
 
 -- Whether symbol is satisfied by the model
 satisfiesSymbol :: Model -> Symbol -> Bool
+satisfiesSymbol [] _ = False
 satisfiesSymbol model symbol =  case valueOf model $ variableOf symbol of
                 Nothing -> False
                 Just variable -> (polarity symbol) == variable
 
 -- Whether clause is satisfied by the model
 satisfiesClause :: Model -> Clause -> Bool
+satisfiesClause [] _ = False
 satisfiesClause model clause = any (satisfiesSymbol model) clause
 
 -- Whether sentence is satisfied by the model
 satisfiesSentence :: Model -> Sentence -> Bool
+satisfiesSentence [] _ = False
 satisfiesSentence model sentence = all (satisfiesClause model) sentence
 
 -- Whether symbol is falsified by the model
 falsifiesSymbol :: Model -> Symbol -> Bool
+falsifiesSymbol [] _ = False
 falsifiesSymbol model symbol = case valueOf model $ variableOf symbol of
                 Nothing -> False
                 Just variable -> (polarity symbol) /= variable
 
 -- Whether clause is falsified by the model
 falsifiesClause :: Model -> Clause -> Bool
+falsifiesClause [] _ = False
 falsifiesClause model clause = all (falsifiesSymbol model) clause
 
 -- Whether sentence is falsified by the model
@@ -135,13 +140,20 @@ removeTautologies sentence = filter (not . isTautology) sentence
 ---------------------------------------------------------------------------
 
 -- SECTION 7.2 : Pure Symbol Heuristic
+
+-- Checks if any of the variables in the list produce a pure symbol and returns the first one that does.
 findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
 findPureSymbol variables sentence model = if null var then Nothing else Just (var, sign)
-                  where LTR (sign, var) = head [ sym | [sym] <- sentence, isPure sym sentence]
+                  where LTR (sign, var) = head $ concat [ maybeToList (isPure (LTR (True, variable)) sentence model) ++
+                                                        maybeToList (isPure (LTR (False, variable)) sentence model)
+                                                        | variable <- variables ]
 
---Update so it takes into consideration the model and variables list
-isPure :: Symbol -> Sentence -> Bool
-isPure symbol sentence =  and [not (isSymbol (complement symbol) clause) | clause <- sentence]
+
+-- Checks if symbol is pure. If symbol is pure it returns the symbol. Otherwise returns Nothing.
+-- Ignores clauses which are satisfied by the model.
+isPure :: Symbol -> Sentence -> Model -> Maybe Symbol
+isPure symbol sentence model =  if unique then Just symbol else Nothing
+              where unique = and [not (isSymbol (complement symbol) clause) | clause <- sentence, not $ satisfiesClause model clause]
 
 -- SECTION 7.3 : Unit Clause Heuristic
 
@@ -199,7 +211,9 @@ f5 = [[LTR (True,"p"), LTR (False,"q")], [LTR (True,"p"), LTR (True,"q")]]
 f6 = [[LTR (True,"p"), LTR (False,"q")], [LTR (True,"q")]]
 f7 = [[LTR (True,"p"), LTR (False,"q")], [LTR (True,"q"), LTR (True,"k")], [LTR (True,"q"), LTR (False,"p"), LTR (False,"k")]]
 
-
+-- Models to test functions
+model1 = [AS ("z", True)]
+model2 = []
 ---------------------------------------------------------------------------
 
 -- TASK 5 : Evaluation
