@@ -71,6 +71,7 @@ falsifiesClause model clause = all (falsifiesSymbol model) clause
 
 -- Whether sentence is falsified by the model
 falsifiesSentence :: Model -> Sentence -> Bool
+falsifiesSentence [] _ = False
 falsifiesSentence model sentence = any (falsifiesClause model) sentence
 
 ---------------------------------------------------------------------------
@@ -141,36 +142,59 @@ removeTautologies sentence = filter (not . isTautology) sentence
 
 -- SECTION 7.2 : Pure Symbol Heuristic
 
--- Checks if any of the variables in the list produce a pure symbol and returns the first one that does.
-findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
-findPureSymbol variables sentence model = if null var then Nothing else Just (var, sign)
-                  where LTR (sign, var) = head $ concat [ maybeToList (isPure (LTR (True, variable)) sentence model) ++
-                                                        maybeToList (isPure (LTR (False, variable)) sentence model)
-                                                        | variable <- variables ]
-
-
 -- Checks if symbol is pure. If symbol is pure it returns the symbol. Otherwise returns Nothing.
 -- Ignores clauses which are satisfied by the model.
 isPure :: Symbol -> Sentence -> Model -> Maybe Symbol
 isPure symbol sentence model =  if unique then Just symbol else Nothing
               where unique = and [not (isSymbol (complement symbol) clause) | clause <- sentence, not $ satisfiesClause model clause]
 
+
+
+-- Checks if any of the variables in the list produce a pure symbol and returns the values to assign to the first one of them.
+-- Returns Nothing of no pure symbols are found.
+-- getPureSymbols function returns a list of all pure symbols created by the variables in the list given.
+findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
+findPureSymbol variables sentence model = case getPureSymbols variables sentence model of
+                                          [] -> Nothing
+                                          [x] -> Just (variableOf x, polarity x)
+                                          (x:xs) -> Just (variableOf x, polarity x)
+          where
+          getPureSymbols variables sentence model = concat [ maybeToList (isPure (LTR (True, variable)) sentence model) ++
+                                                             maybeToList (isPure (LTR (False, variable)) sentence model)
+                                                           | variable <- variables, variable `elem` variablesOfSentence sentence ]
+
+
 -- SECTION 7.3 : Unit Clause Heuristic
 
+-- Removes symbols in the clause which are falsified by the model
+simplifyClause :: Model -> Clause -> Clause
+simplifyClause _ [] = []
+simplifyClause [] clause = clause
+simplifyClause model clause = [symbol | symbol <- clause, falsifiesSymbol model symbol == False]
+
+-- Checks if any clause in the sentence is unit clause and returns the value to assign to the first one of them.
+-- Returns Nothing if no unit clauses are found.
+-- getUnitClauses function retuns a list of all unit clauses
 findUnitClause :: Sentence -> Model -> Maybe (Variable, Bool)
-findUnitClause = undefined
+findUnitClause sentence model = case getUnitClauses sentence model of
+                                [] -> Nothing
+                                [[x]] -> Just (variableOf x, polarity x)
+                                ([x]:xs) -> Just (variableOf x, polarity x)
+          where
+          getUnitClauses sentence model = filter (\clause -> length clause == 1) $ map (simplifyClause model) sentence
 
 -- SECTION 7.4 : Early Termination
 
+-- Checks whether sentence is satisfied or falsified by the given model
 earlyTerminate :: Sentence -> Model -> Bool
-earlyTerminate = undefined
+earlyTerminate sentence model = satisfiesSentence model sentence || falsifiesSentence model sentence
 
 ---------------------------------------------------------------------------
 
 -- SECTION 7.5 : DPLL algorithm
 
 dpll :: (Node -> Variable) -> [Node] -> Int -> (Bool, Int)
-dpll = undefined
+dpll heuristic nodes int = undefined
 
 ---------------------------------------------------------------------------
 
@@ -203,7 +227,7 @@ dpllSatisfiablev2 sentence = dpll variableSelectionHeuristic [(removeTautologies
 ---------------------------------------------------------------------------
 
 -- Examples of type Sentence which you can use to test the functions you develop
-
+f1 = [[LTR (True,"p"), LTR (True,"q")], [LTR (True,"p"), LTR (False,"p")], [LTR (True,"q")]]
 f2 = [[LTR (True,"p"), LTR (True,"q")], [LTR (True,"p"), LTR (True,"q"), LTR (True,"z")], [LTR (False,"z"), LTR (False,"w"), LTR (True,"k")], [LTR (False,"z"), LTR (False,"w"), LTR (True,"s")], [LTR (True,"p"), LTR (False,"q")]]
 f3 = [[LTR (True,"k"), LTR (False,"g"), LTR (True,"t")], [LTR (False,"k"), LTR (True,"w"), LTR (True,"z")], [LTR (True,"t"), LTR (True,"p")], [LTR (False,"p")], [LTR (True,"z"), LTR (True,"k"), LTR (False,"w")], [LTR (False,"z"), LTR (False,"k"), LTR (False,"w")], [LTR (False,"z"), LTR (True,"k"), LTR (True,"w")]]
 f4 = [[LTR (True,"p")], [LTR (False,"p")]]
@@ -213,7 +237,9 @@ f7 = [[LTR (True,"p"), LTR (False,"q")], [LTR (True,"q"), LTR (True,"k")], [LTR 
 
 -- Models to test functions
 model1 = [AS ("z", True)]
-model2 = []
+model2 = [AS ("p", True)]
+model3 = [AS ("q", True)]
+model4 = []
 ---------------------------------------------------------------------------
 
 -- TASK 5 : Evaluation
