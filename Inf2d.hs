@@ -174,14 +174,14 @@ simplifyClause model clause = [symbol | symbol <- clause, falsifiesSymbol model 
 
 -- Checks if any clause in the sentence is unit clause and returns the value to assign to the first one of them.
 -- Returns Nothing if no unit clauses are found.
--- getUnitClauses function retuns a list of all unit clauses
+-- getUnitClauses function retuns a list of all unit clauses, which are not already satisfied by the model.
 findUnitClause :: Sentence -> Model -> Maybe (Variable, Bool)
 findUnitClause sentence model = case getUnitClauses sentence model of
                                 [] -> Nothing
                                 [[x]] -> Just (variableOf x, polarity x)
                                 ([x]:xs) -> Just (variableOf x, polarity x)
           where
-          getUnitClauses sentence model = filter (\clause -> length clause == 1) $ map (simplifyClause model) sentence
+          getUnitClauses sentence model = filter (\clause -> satisfiesClause model clause == False) $ filter (\clause -> length clause == 1) $ map (simplifyClause model) sentence
 
 -- SECTION 7.4 : Early Termination
 
@@ -192,23 +192,26 @@ earlyTerminate sentence model = satisfiesSentence model sentence || falsifiesSen
 ---------------------------------------------------------------------------
 
 -- SECTION 7.5 : DPLL algorithm
-
 dpll :: (Node -> Variable) -> [Node] -> Int -> (Bool, Int)
+dpll heuristic [] i = (False, i)
 dpll heuristic ((sentence, (variables, model)):xs) i
-              | earlyTerminate sentence model  = (satisfiesSentence model sentence, i)
+              | earlyTerminate sentence model  =
+                case satisfiesSentence model sentence of
+                  True -> (True, i)
+                  False -> dpll heuristic xs (i + 1)
               | otherwise =
                 case findPureSymbol variables sentence model of
-                  Just (variable, value) -> dpll heuristic (xs ++ [(sentence,(delete variable variables, assign model variable value))]) (i + 1)
+                  Just (variable, value) -> dpll heuristic ((sentence,(delete variable variables, assign model variable value)):xs) i
                   Nothing ->
                     case findUnitClause sentence model of
-                      Just (variable, value) -> dpll heuristic (xs ++ [(sentence,(delete variable variables, assign model variable value))]) (i + 1)
+                      Just (variable, value) -> dpll heuristic ((sentence,(delete variable variables, assign model variable value)):xs) i
                       Nothing ->
-                          (dpll heuristic (xs ++ [(sentence, ( delete chosenVariable variables, assign model chosenVariable True)) ]) (i + 1))
-                            ||
-                          (dpll heuristic (xs ++ [(sentence, ( delete chosenVariable variables, assign model chosenVariable False)) ]) (i + 1))
+                          dpll heuristic (nodeTrue:nodeFalse:xs) i
                               where
                                 node = (sentence, (variables, model))
                                 chosenVariable = heuristic node
+                                nodeTrue = (sentence, ( delete chosenVariable variables, assign model chosenVariable True))
+                                nodeFalse = (sentence, ( delete chosenVariable variables, assign model chosenVariable False))
 
 
 
@@ -254,8 +257,8 @@ f7 = [[LTR (True,"p"), LTR (False,"q")], [LTR (True,"q"), LTR (True,"k")], [LTR 
 
 -- Models to test functions
 model1 = [AS ("z", True)]
-model2 = [AS ("p", True)]
-model3 = [AS ("q", True)]
+model2 = [AS ("p", False), AS("t", True), AS("g", False)]
+model3 = [AS ("p", False), AS("g", False)]
 model4 = []
 ---------------------------------------------------------------------------
 

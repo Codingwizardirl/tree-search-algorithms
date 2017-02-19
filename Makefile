@@ -7,9 +7,9 @@
 # Makefile
 #
 
-OBJS 	= Prop.o Inf2d.o Main/SatParser.o 
-INTERS  = Prop.hi Inf2d.hi Main/SatParser.hi 
-SOURCE	= Prop.hs Inf2d.hs Main/SatParser.hs 
+OBJS 	= Prop.o Inf2d.o Main/SatParser.o
+INTERS  = Prop.hi Inf2d.hi Main/SatParser.hi
+SOURCE	= Prop.hs Inf2d.hs Main/SatParser.hs
 CC	= ghc
 FLAGS   = -package parsec -package random -iMain -c
 OFLAGS  = -package parsec -package random -iMain
@@ -39,4 +39,3 @@ cleanall: clean
 
 count:
 	wc $(SOURCE)
-
