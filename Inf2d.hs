@@ -144,25 +144,31 @@ removeTautologies sentence = filter (not . isTautology) sentence
 
 -- Checks if symbol is pure. If symbol is pure it returns the symbol. Otherwise returns Nothing.
 -- Ignores clauses which are satisfied by the model.
-isPure :: Symbol -> Sentence -> Model -> Maybe Symbol
-isPure symbol sentence model =  if unique then Just symbol else Nothing
-              where unique = and [not (isSymbol (complement symbol) clause) | clause <- sentence, not $ satisfiesClause model clause]
+isPure :: Symbol -> Sentence -> Model -> Bool
+isPure symbol sentence model =  unique
+              where
+                unique = and [not (isSymbol complementSymbol clause) | clause <- sentence, not $ satisfiesClause model clause]
+                complementSymbol = complement symbol
 
+-- Removes clauses which are satisfied in the sentence
+simplifySentence :: Model -> Sentence -> Sentence
+simplifySentence model sentence = [clause | clause <- sentence, satisfiesClause model clause == False]
 
 
 -- Checks if any of the variables in the list produce a pure symbol and returns the values to assign to the first one of them.
 -- Returns Nothing of no pure symbols are found.
--- getPureSymbols function returns a list of all pure symbols created by the variables in the list given.
 findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
-findPureSymbol variables sentence model = case getPureSymbols variables sentence model of
-                                          [] -> Nothing
-                                          [x] -> Just (variableOf x, polarity x)
-                                          (x:xs) -> Just (variableOf x, polarity x)
+findPureSymbol variables sentence model
+                          | isJust pureVariable = Just(fromJust pureVariable, True)
+                          | otherwise =
+                            case find purePredicateFalse variables of
+                              Nothing -> Nothing
+                              Just variable -> Just(variable, False)
           where
-          getPureSymbols variables sentence model = concat [ maybeToList (isPure (LTR (True, variable)) sentence model) ++
-                                                             maybeToList (isPure (LTR (False, variable)) sentence model)
-                                                           | variable <- variables, variable `elem` variablesOfSentence sentence ]
-
+          pureVariable = find purePredicateTrue variables
+          purePredicateTrue variable =  variable `elem` variablesOfSentence simplifiedSentence && isPure (LTR (True, variable)) simplifiedSentence model
+          purePredicateFalse variable =  variable `elem` variablesOfSentence simplifiedSentence && isPure (LTR (False, variable)) simplifiedSentence model
+          simplifiedSentence = simplifySentence model sentence
 
 -- SECTION 7.3 : Unit Clause Heuristic
 
@@ -172,26 +178,34 @@ simplifyClause _ [] = []
 simplifyClause [] clause = clause
 simplifyClause model clause = [symbol | symbol <- clause, falsifiesSymbol model symbol == False]
 
+
 -- Checks if any clause in the sentence is unit clause and returns the value to assign to the first one of them.
 -- Returns Nothing if no unit clauses are found.
--- getUnitClauses function retuns a list of all unit clauses, which are not already satisfied by the model.
 findUnitClause :: Sentence -> Model -> Maybe (Variable, Bool)
-findUnitClause sentence model = case getUnitClauses sentence model of
-                                [] -> Nothing
-                                [[x]] -> Just (variableOf x, polarity x)
-                                ([x]:xs) -> Just (variableOf x, polarity x)
+findUnitClause sentence model
+                  | isNothing unitClause = Nothing
+                  | otherwise = Just(variable, value)
           where
-          getUnitClauses sentence model = filter (\clause -> satisfiesClause model clause == False) $ filter (\clause -> length clause == 1) $ map (simplifyClause model) sentence
+          unitClause = find unitPredicate simplifiedSentence
+          unitPredicate clause = length (simplifyClause model clause) == 1 && not (satisfiesClause model $ simplifyClause model clause)
+          simplifiedSentence = simplifySentence model sentence
+          variable = variableOf $ head $ simplifyClause model $ fromJust unitClause
+          value = polarity $ head $ simplifyClause model $ fromJust unitClause
+
 
 -- SECTION 7.4 : Early Termination
 
 -- Checks whether sentence is satisfied or falsified by the given model
 earlyTerminate :: Sentence -> Model -> Bool
-earlyTerminate sentence model = satisfiesSentence model sentence || falsifiesSentence model sentence
+earlyTerminate sentence model = falsifiesSentence model sentence || satisfiesSentence model sentence
 
 ---------------------------------------------------------------------------
 
 -- SECTION 7.5 : DPLL algorithm
+-- Code follow pseudo code given in the book.
+-- Algorithm first checks for early termination. Then it finds all pure symbols and assigns them to true.
+-- It finds all unit clauses and assigns all symbols in there to true.
+-- If sentence isn't satisfied it choses a variable using heuristic and branches on that variable.
 dpll :: (Node -> Variable) -> [Node] -> Int -> (Bool, Int)
 dpll heuristic [] i = (False, i)
 dpll heuristic ((sentence, (variables, model)):xs) i
@@ -210,8 +224,9 @@ dpll heuristic ((sentence, (variables, model)):xs) i
                               where
                                 node = (sentence, (variables, model))
                                 chosenVariable = heuristic node
-                                nodeTrue = (sentence, ( delete chosenVariable variables, assign model chosenVariable True))
-                                nodeFalse = (sentence, ( delete chosenVariable variables, assign model chosenVariable False))
+                                newVariables = delete chosenVariable variables
+                                nodeTrue = (sentence, ( newVariables, assign model chosenVariable True))
+                                nodeFalse = (sentence, ( newVariables, assign model chosenVariable False))
 
 
 
