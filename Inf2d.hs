@@ -317,32 +317,32 @@ model4 = []
 {-
           |  p=0  | p=0.5 |  p=1  |
 ----------+-------+-------+-------+
-Sat01.cnf |       |       |       |
-Sat02.cnf |       |       |       |
-Sat03.cnf |       |       |       |
-Sat04.cnf |       |       |       |
-Sat05.cnf |       |       |       |
-Sat06.cnf |       |       |       |
-Sat07.cnf |       |       |       |
-Say08.cnf |       |       |       |
-Say09.cnf |       |       |       |
-Say10.cnf |       |       |       |
+Sat01.cnf |  56   |  255  |  289  |
+Sat02.cnf | Fail  |  Fail |  Fail |
+Sat03.cnf |  45   |  140  |  304  |
+Sat04.cnf | Fail  |  Fail |  Fail |
+Sat05.cnf | Fail  |  592  |  Fail |
+Sat06.cnf | Fail  |  Fail |  Fail |
+Sat07.cnf | Fail  |  Fail |  Fail |
+Say08.cnf |  48   |  133  |  300  |
+Say09.cnf | Fail  |  Fail |  Fail |
+Say10.cnf |  34   |  573  |  Fail |
 ----------+-------+-------+-------+
 
 -- TABLE 2 : DPLL and DPLLv2
 
           | DPLL   | DPLLv2 |
 ----------+--------+--------+
-Sat01.cnf |        |        |
-Sat02.cnf |        |        |
-Sat03.cnf |        |        |
-Sat04.cnf |        |        |
-Sat05.cnf |        |        |
-Sat06.cnf |        |        |
-Sat07.cnf |        |        |
-Say08.cnf |        |        |
-Say09.cnf |        |        |
-Say10.cnf |        |        |
+Sat01.cnf |   0    |   0    |
+Sat02.cnf |   93   |   27   |
+Sat03.cnf |   0    |   0    |
+Sat04.cnf |   337  |   128  |
+Sat05.cnf |   260  |   95   |
+Sat06.cnf |   943  |   101  |
+Sat07.cnf |   624  |   5    |
+Say08.cnf |   0    |   0    |
+Say09.cnf |   300  |   173  |
+Say10.cnf |   158  |   19   |
 ----------+--------+--------+
 -}
 ---------------------------------------------------------------------------
