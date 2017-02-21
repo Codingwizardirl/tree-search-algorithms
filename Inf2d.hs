@@ -142,33 +142,40 @@ removeTautologies sentence = filter (not . isTautology) sentence
 
 -- SECTION 7.2 : Pure Symbol Heuristic
 
--- Checks if symbol is pure. If symbol is pure it returns the symbol. Otherwise returns Nothing.
--- Ignores clauses which are satisfied by the model.
-isPure :: Symbol -> Sentence -> Model -> Bool
-isPure symbol sentence model =  unique
-              where
-                unique = and [not (isSymbol complementSymbol clause) | clause <- sentence, not $ satisfiesClause model clause]
-                complementSymbol = complement symbol
-
--- Removes clauses which are satisfied in the sentence
+-- Removes clauses which are satisfied by the model from the sentence
 simplifySentence :: Model -> Sentence -> Sentence
 simplifySentence model sentence = [clause | clause <- sentence, satisfiesClause model clause == False]
 
 
+-- Checks if the variable produces a pure symbol.
+-- Function filters all symbols in the sentence produced by the passed variable and checks if they all are the same symbol (have the same polarity)
+isPureVar :: Variable -> Sentence -> Model -> Maybe Symbol
+isPureVar variable sentence model
+                            | length varList == 1 = Just (head varList)
+                            | otherwise = Nothing
+                    where
+                      varList = nub $ concat $ map (\clause -> filterClause variable clause) sentence
+                      filterClause variable clause = filter (\symbol -> variableOf symbol == variable) clause
+
 -- Checks if any of the variables in the list produce a pure symbol and returns the values to assign to the first one of them.
--- Returns Nothing of no pure symbols are found.
+-- Function first simplifies the sentence by first removing the clauses satisfied by the model.
+-- Returns Nothing if no pure symbols are found.
 findPureSymbol :: [Variable] -> Sentence -> Model -> Maybe (Variable, Bool)
 findPureSymbol variables sentence model
-                          | isJust pureVariable = Just(fromJust pureVariable, True)
-                          | otherwise =
-                            case find purePredicateFalse variables of
-                              Nothing -> Nothing
-                              Just variable -> Just(variable, False)
+                          | isNothing pureSym = Nothing
+                          | otherwise = Just(var, value)
+
           where
-          pureVariable = find purePredicateTrue variables
-          purePredicateTrue variable =  variable `elem` variablesOfSentence simplifiedSentence && isPure (LTR (True, variable)) simplifiedSentence model
-          purePredicateFalse variable =  variable `elem` variablesOfSentence simplifiedSentence && isPure (LTR (False, variable)) simplifiedSentence model
+          pureSym = listToMaybe [ fromJust $ purePredicate variable
+                                | variable <- variables,
+                                  variable `elem` prunedVaribles && isJust (purePredicate variable)
+                                ]
+          purePredicate variable = isPureVar variable simplifiedSentence model
+          prunedVaribles = variablesOfSentence simplifiedSentence
           simplifiedSentence = simplifySentence model sentence
+          var = variableOf $ fromJust pureSym
+          value = polarity $ fromJust pureSym
+
 
 -- SECTION 7.3 : Unit Clause Heuristic
 
