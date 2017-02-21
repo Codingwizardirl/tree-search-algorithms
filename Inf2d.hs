@@ -255,8 +255,35 @@ dpllSatisfiable sentence = dpll firstVariable [(removeTautologies sentence, (var
 
 -- TASK 4
 
+-- Applies the formula (f(x) + f(-x))*2^k + f(x)*f(-x) for k = 4
+-- This is formula generally used with the MOM heuristic
+-- We try to maximize this function
+applyFormula :: Float -> Float -> Float
+applyFormula f1 f2 = (f1 + f2)*(2^4) + f1*f2
+
+
+-- Returns ratio of number of occurences of the symbol to the length of the clause it occurs in (relative frequency)
+-- This normalizes the frequency and gives higher weight to smaller clauses with high occurances
+frequencyRatio :: Symbol -> Clause -> Float
+frequencyRatio symbol clause =  (fromIntegral $ length $ filter(\sym -> sym == symbol) clause) / (fromIntegral $ length clause)
+
+-- Given a variable it first calculates the relative frequencies for the positive and negative symbol
+-- created by the given variable and then applies the formula we wish to maximise using these numbers.
+scoreVariable :: Variable -> Sentence -> Float
+scoreVariable variable sentence = applyFormula posRatio negRatio
+                      where
+                      (posRatio,negRatio) = foldl' (\(a,b) (c,d)-> (a+c, c+d)) (0,0) [(frequencyRatio posSymbol clause, frequencyRatio negSymbol clause) | clause <- sentence ]
+                      posSymbol = LTR(True, variable)
+                      negSymbol = LTR(False, variable)
+
+-- Heuristic acts on the basis of the Maximum Occurrences on clauses of Minimum size (MOM’s) heuristic
+-- Calls the scoreVariable function on every variable in the list and returns the one that maximises the function
+-- given in applyFormula.
 variableSelectionHeuristic :: Node -> Variable
-variableSelectionHeuristic = undefined
+variableSelectionHeuristic (sentence, (variables, model)) = chosenVariable
+                          where
+                            (score, chosenVariable) = maximum [(scoreVariable variable simplifiedSentence, variable) | variable <- variables]
+                            simplifiedSentence = simplifySentence model sentence
 
 ---------------------------------------------------------------------------
 
