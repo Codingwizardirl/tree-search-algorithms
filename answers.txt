@@ -1,0 +1,185 @@
+-----------------------------------------------------------------------
+ ------ Informatics 2D - 2015/16 - Second Assignment - Planning ------
+-----------------------------------------------------------------------
+ 
+ Write here you matriculation number (only - your name is not needed)
+ Matriculation Number: s_______
+ 
+1.1)
+Knowledge Base:
+-----------------------------------------------------------------------
+We can describe the street plan with the following atemporal predicates:
+Adjacent(A,B) and Adjacent(B,A) and Adjacent(B,C) and Adjacent(C,B) and 
+Adjacent(G,H) and Adjacent(H,G) and Adjacent(H,D) and Adjacent(D,H) and 
+Adjacent(E,F) and Adjacent(F,E) and
+Adjacent(A,G) and Adjacent(D,B) and Adjacent(H,F) and Adjacent(F,C)
+
+
+-----------------------------------------------------------------------
+We can keep position of the passenger and agent by the fluent:
+At(object, location, s)
+
+-----------------------------------------------------------------------
+For destination of the passenger we can use an atemporal predicate:
+Destination(d)
+
+-----------------------------------------------------------------------
+Initial State:
+Adjacent(A,B) and Adjacent(B,A) and Adjacent(B,C) and Adjacent(C,B) and 
+Adjacent(G,H) and Adjacent(H,G) and Adjacent(H,D) and Adjacent(D,H) and 
+Adjacent(E,F) and Adjacent(F,E) and
+Adjacent(A,G) and Adjacent(D,B) and Adjacent(H,F) and Adjacent(F,C) and
+At(Agent, La, s0) and At(Passenger, Lp, s0) and Destination(Ld)
+
+1.2)
+-----------------------------------------------------------------------
+Adjacent(l1, l2) => Poss(Move(l1,l2,s))
+
+At(Passenger, location, s) and At(Agent, location, s) and not (Passenger = Agent or Arrived(Passenger)) => Poss(PickUp(Agent,Passenger, location, s))
+
+Poss(PickUp(Agent,Passenger, location, s)) => Holding(Agent, Passenger, s)
+
+Holding(Agent, Passenger, s) => Poss(Drop(Passenger, s))
+
+At(Agent, Destination(Passenger), s) => Poss(Transport(Passenger,s))
+
+Poss(Transport(Passenger, s)) => Arrived(Passenger, s)
+
+
+-----------------------------------------------------------------------
+This problem in First Order Logic is also knows as Frame Problem. The main aspect of the problem is that representing the current state of the world requires a lot of axioms regardless of whether the environment changed or not.
+
+Thing about STRIPS HERE:
+
+-----------------------------------------------------------------------
+
+Successor-state axioms:
+
+Poss(a,s) => At(object, location, Result(a,s)) <=> 
+       (a = Move(x,location,s)) or
+       At(object, location, s) and (not a = Move(location, y, s))
+
+Poss(a,s) => PickUp(Agent, Passenger, location, Result(a,s)) <=>
+       (a = Move(x, location, s)) or
+       PickUp(Agent, Passenger, location, s) and (not a = Move(location, y, s))
+
+Poss(a,s) => Holding(Agent, Passenger, Result(a,s)) <=>
+        (a = PickUp(Agent, Passenger, s)) or
+        Holding(Agent, Passenger, s) and not a = Drop(Passenger, s)
+
+Poss(a,s) => Drop(Passenger, Result(a,s)) <=>
+            (a = Drop(Passenger, s)) or
+            Drop(Passenger, s) and not a = PickUp(agent, Passenger, location, s)
+
+Poss(a,s) => Transport(Passenger, Result(a,s)) <=>  
+              (a = Transport(Passenger, s)) or
+              Transport(Passenger, s) and not a = (Move(x, y, s))
+
+Poss(a,s) => Arrived(Passenger, Result(a,s)) <=> 
+              (a = Arrived(Passenger, s)) or Arrived(Passenger, s)
+
+1.3)
+Goal: exists s.arrived(passenger, s)  (Possibly Arrived?)
+Negated Goal: not Arrived(passenger, s)
+
+Initial state: Adjacency states remain as shown in 1.1) with addition of 
+At(Agent, a, s0) and At(Passenger, a, s0) and Destination(h)
+
+Convert axioms to CNF:
+
+Possibility axioms:
+not Adjacent(l1, l2) or Poss(Move(l1,l2,s))
+
+not At(Passenger, location, s) or not At(Agent, location, s) or Passenger = Agent or Arrived(Passenger) or Poss(PickUp(Agent,Passenger, location, s))
+
+not Poss(PickUp(Agent,Passenger, location, s)) or Holding(Agent, Passenger, s)
+
+not Holding(Agent, Passenger, s) or Poss(Drop(Passenger, s))
+
+not Poss(Transport(Passenger, s)) or Arrived(Passenger, s)
+
+Successor-state axioms:
+Since the repetative nature of the CNF form of these axioms I will represent them in form where functions are represented by the letter shown.
+-------------------------------------------------------
+At
+-------------------------------------------------------
+If
+A = Poss(a,s)
+B = At(object, location, Result(a,s))
+C = (a = Move(x,location,s)) 
+D = At(object, location, s)
+E = not a = Move(location, y, s)
+
+Form of axiom: A => B <=> C or (D and E)
+CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
+
+--------------------------------------------------------
+PickUp
+--------------------------------------------------------
+If
+A = Poss(a,s)
+B = PickUp(Agent, Passenger, location, Result(a,s))
+C = (a = Move(x, location, s))
+D = PickUp(Agent, Passenger, location, s)
+E = not a = Move(location, y, s)
+
+Form of axiom: A => B <=> C or (D and E)
+CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
+
+
+--------------------------------------------------------
+Holding
+--------------------------------------------------------
+If
+A = Poss(a,s)
+B = Holding(Agent, Passenger, Result(a,s))
+C = (a = PickUp(Agent, Passenger, s))
+D = Holding(Agent, Passenger, s)
+E = not a = Drop(Passenger, s)
+
+Form of axiom: A => B <=> C or (D and E)
+CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
+
+--------------------------------------------------------
+Drop
+--------------------------------------------------------
+If
+A = Poss(a,s)
+B = Drop(Passenger, Result(a,s))
+C = (a = Drop(Passenger, s))
+D = Drop(Passenger, s)
+E = not a = PickUp(agent, Passenger, location, s)
+
+Form of axiom: A => B <=> C or (D and E)
+CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
+
+--------------------------------------------------------
+Transport
+--------------------------------------------------------
+If
+A = Poss(a,s)
+B = Transport(Passenger, Result(a,s))
+C = (a = Transport(Passenger, s))
+D = Transport(Passenger, s)
+E = not a = Drop(Passenger, s) not a = (Move(x, y, s))
+
+Form of axiom: A => B <=> C or (D and E)
+CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
+
+--------------------------------------------------------
+Arrived
+--------------------------------------------------------
+If
+A = Poss(a,s)
+B = Arrived(Passenger, Result(a,s))
+C = (a = Arrived(Passenger, s))
+D = Arrived(Passenger, s)
+
+
+Form of axiom: A => B <=> C or D
+CNF: [A,C,D] , [~B,C,D] , [~C,~A,B] , [~D,~A,B]
+
+Proof:
+
+--------------------
+Answers to parts 2 and 3 should be included in the appropriate domain-*.pl and instance-*.pl files.
