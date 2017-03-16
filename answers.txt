@@ -3,8 +3,7 @@
 -----------------------------------------------------------------------
  
  Write here you matriculation number (only - your name is not needed)
- Matriculation Number: s_______
- 
+ Matriculation Number: s1525701
 1.1)
 Knowledge Base:
 -----------------------------------------------------------------------
@@ -13,7 +12,6 @@ Adjacent(A,B) and Adjacent(B,A) and Adjacent(B,C) and Adjacent(C,B) and
 Adjacent(G,H) and Adjacent(H,G) and Adjacent(H,D) and Adjacent(D,H) and 
 Adjacent(E,F) and Adjacent(F,E) and
 Adjacent(A,G) and Adjacent(D,B) and Adjacent(H,F) and Adjacent(F,C)
-
 
 -----------------------------------------------------------------------
 We can keep position of the passenger and agent by the fluent:
@@ -29,21 +27,23 @@ Adjacent(A,B) and Adjacent(B,A) and Adjacent(B,C) and Adjacent(C,B) and
 Adjacent(G,H) and Adjacent(H,G) and Adjacent(H,D) and Adjacent(D,H) and 
 Adjacent(E,F) and Adjacent(F,E) and
 Adjacent(A,G) and Adjacent(D,B) and Adjacent(H,F) and Adjacent(F,C) and
-At(Agent, La, s0) and At(Passenger, Lp, s0) and Destination(Ld)
+At(Agent, La, s0) and At(Passenger, Lp, s0) and Destination(Ld) and
+Passenger(Passenger) and Agent(Agent)
 
 1.2)
 -----------------------------------------------------------------------
-Adjacent(l1, l2) => Poss(Move(l1,l2,s))
+Possibility axiom:Adjacent(x, y) and At(Agent, x, s) => Poss(Move(x,y),s))
+Effect axiom: Poss(Move(x,y),s)) => At(Agent, Result(Move(x,y)), s)
 
-At(Passenger, location, s) and At(Agent, location, s) and not (Passenger = Agent or Arrived(Passenger)) => Poss(PickUp(Agent,Passenger, location, s))
+Possibility axiom: At(object, location, s) and At(Agent, location, s) and not (object = Agent) and not Arrived(object, s) and not Holding(object, s) => Poss(PickUp(object), s))
+Effect axiom: Poss(PickUp(object), s)) => Holding(object, s)
 
-Poss(PickUp(Agent,Passenger, location, s)) => Holding(Agent, Passenger, s)
+Possibility axiom: At(Agent, location, s) and Holding(Passenger, s)  => Poss(Drop(Passenger, location), s))
+Effect axiom: Poss(Drop(Passenger, location), s) => At(Passenger, location, s)
 
-Holding(Agent, Passenger, s) => Poss(Drop(Passenger, s))
+Possibility axiom:At(Agent, Destination(Passenger), s) and Holding(Passenger, s) => Poss(Transport(Passenger),s)
+Effect axiom: Poss(Transport(Passenger), s)) => Arrived(Passenger, s)
 
-At(Agent, Destination(Passenger), s) => Poss(Transport(Passenger,s))
-
-Poss(Transport(Passenger, s)) => Arrived(Passenger, s)
 
 
 -----------------------------------------------------------------------
@@ -56,47 +56,39 @@ Thing about STRIPS HERE:
 Successor-state axioms:
 
 Poss(a,s) => At(object, location, Result(a,s)) <=> 
-       (a = Move(x,location,s)) or
-       At(object, location, s) and (not a = Move(location, y, s))
+       (a = Move(x,location,s) and object = Agent) or
+       (a = Move(x,location,s) and Holding(object, s) and object = Passenger) or
+       At(object, location, s) and (not a = Move(location, y, s)) and not y = location or
+       At(object, location, s) and not Holding(object, s)
 
-Poss(a,s) => PickUp(Agent, Passenger, location, Result(a,s)) <=>
-       (a = Move(x, location, s)) or
-       PickUp(Agent, Passenger, location, s) and (not a = Move(location, y, s))
 
-Poss(a,s) => Holding(Agent, Passenger, Result(a,s)) <=>
-        (a = PickUp(Agent, Passenger, s)) or
-        Holding(Agent, Passenger, s) and not a = Drop(Passenger, s)
+Poss(a,s) => Holding(passenger, Result(a,s)) <=>
+        (a = PickUp(passenger)) or
+        Holding(passenger, s) and not a = Drop(passenger, location))
 
-Poss(a,s) => Drop(Passenger, Result(a,s)) <=>
-            (a = Drop(Passenger, s)) or
-            Drop(Passenger, s) and not a = PickUp(agent, Passenger, location, s)
 
-Poss(a,s) => Transport(Passenger, Result(a,s)) <=>  
-              (a = Transport(Passenger, s)) or
-              Transport(Passenger, s) and not a = (Move(x, y, s))
-
-Poss(a,s) => Arrived(Passenger, Result(a,s)) <=> 
-              (a = Arrived(Passenger, s)) or Arrived(Passenger, s)
+Poss(a,s) => Arrived(passenger, Result(a,s)) <=> 
+              a = Trasport(passenger) or Arrived(passenger, s)
 
 1.3)
 Goal: exists s.arrived(passenger, s)  (Possibly Arrived?)
 Negated Goal: not Arrived(passenger, s)
 
 Initial state: Adjacency states remain as shown in 1.1) with addition of 
-At(Agent, a, s0) and At(Passenger, a, s0) and Destination(h)
+At(agent, a, s0) and At(passenger, a, s0) and Destination(h)
 
 Convert axioms to CNF:
 
 Possibility axioms:
 not Adjacent(l1, l2) or Poss(Move(l1,l2,s))
 
-not At(Passenger, location, s) or not At(Agent, location, s) or Passenger = Agent or Arrived(Passenger) or Poss(PickUp(Agent,Passenger, location, s))
+not At(passenger, location, s) or not At(agent, location, s) or passenger = agent or Arrived(passenger) or Poss(PickUp(agent,passenger, location, s))
 
-not Poss(PickUp(Agent,Passenger, location, s)) or Holding(Agent, Passenger, s)
+not Poss(PickUp(agent,passenger, location, s)) or Holding(agent, passenger, s)
 
-not Holding(Agent, Passenger, s) or Poss(Drop(Passenger, s))
+not Holding(agent, passenger, s) or Poss(Drop(passenger, s))
 
-not Poss(Transport(Passenger, s)) or Arrived(Passenger, s)
+not Poss(Transport(passenger, s)) or Arrived(passenger, s)
 
 Successor-state axioms:
 Since the repetative nature of the CNF form of these axioms I will represent them in form where functions are represented by the letter shown.
@@ -118,9 +110,9 @@ PickUp
 --------------------------------------------------------
 If
 A = Poss(a,s)
-B = PickUp(Agent, Passenger, location, Result(a,s))
+B = PickUp(agent, passenger, location, Result(a,s))
 C = (a = Move(x, location, s))
-D = PickUp(Agent, Passenger, location, s)
+D = PickUp(agent, passenger, location, s)
 E = not a = Move(location, y, s)
 
 Form of axiom: A => B <=> C or (D and E)
@@ -132,10 +124,10 @@ Holding
 --------------------------------------------------------
 If
 A = Poss(a,s)
-B = Holding(Agent, Passenger, Result(a,s))
-C = (a = PickUp(Agent, Passenger, s))
-D = Holding(Agent, Passenger, s)
-E = not a = Drop(Passenger, s)
+B = Holding(agent, passenger, Result(a,s))
+C = (a = PickUp(agent, passenger, s))
+D = Holding(agent, passenger, s)
+E = not a = Drop(passenger, s)
 
 Form of axiom: A => B <=> C or (D and E)
 CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
@@ -145,11 +137,10 @@ Drop
 --------------------------------------------------------
 If
 A = Poss(a,s)
-B = Drop(Passenger, Result(a,s))
-C = (a = Drop(Passenger, s))
-D = Drop(Passenger, s)
-E = not a = PickUp(agent, Passenger, location, s)
-
+B = Drop(passenger, Result(a,s))
+C = (a = Drop(passenger, s))
+D = Drop(passenger, s)
+E = not a = PickUp(agent, passenger, location, s)p
 Form of axiom: A => B <=> C or (D and E)
 CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
 
@@ -158,10 +149,10 @@ Transport
 --------------------------------------------------------
 If
 A = Poss(a,s)
-B = Transport(Passenger, Result(a,s))
-C = (a = Transport(Passenger, s))
-D = Transport(Passenger, s)
-E = not a = Drop(Passenger, s) not a = (Move(x, y, s))
+B = Transport(passenger, Result(a,s))
+C = (a = Transport(passenger, s))
+D = Transport(passenger, s)
+E = not a = Drop(passenger, s) not a = (Move(x, y, s))
 
 Form of axiom: A => B <=> C or (D and E)
 CNF: [~A,~B,C,D] , [~A,~B,C,E] , [~A,~C,B] , [~A,~D,~E,B]
@@ -171,9 +162,9 @@ Arrived
 --------------------------------------------------------
 If
 A = Poss(a,s)
-B = Arrived(Passenger, Result(a,s))
-C = (a = Arrived(Passenger, s))
-D = Arrived(Passenger, s)
+B = Arrived(passenger, Result(a,s))
+C = (a = Arrived(passenger, s))
+D = Arrived(passenger, s)
 
 
 Form of axiom: A => B <=> C or D
