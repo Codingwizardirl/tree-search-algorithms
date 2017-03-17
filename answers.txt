@@ -27,23 +27,36 @@ Adjacent(A,B) and Adjacent(B,A) and Adjacent(B,C) and Adjacent(C,B) and
 Adjacent(G,H) and Adjacent(H,G) and Adjacent(H,D) and Adjacent(D,H) and 
 Adjacent(E,F) and Adjacent(F,E) and
 Adjacent(A,G) and Adjacent(D,B) and Adjacent(H,F) and Adjacent(F,C) and
-At(Agent, La, s0) and At(Passenger, Lp, s0) and Destination(Ld) and
-Passenger(Passenger) and Agent(Agent)
+At(Agent, La, s0) and At(Passenger, Lp, s0) and Destination(Ld)
 
 1.2)
 -----------------------------------------------------------------------
+Move(x,y)
+-----------------------------------------------------------------------
 Possibility axiom:Adjacent(x, y) and At(Agent, x, s) => Poss(Move(x,y),s))
+
 Effect axiom: Poss(Move(x,y),s)) => At(Agent, Result(Move(x,y)), s)
 
+-----------------------------------------------------------------------
+PickUp(object)
+-----------------------------------------------------------------------
 Possibility axiom: At(object, location, s) and At(Agent, location, s) and not (object = Agent) and not Arrived(object, s) and not Holding(object, s) => Poss(PickUp(object), s))
-Effect axiom: Poss(PickUp(object), s)) => Holding(object, s)
 
-Possibility axiom: At(Agent, location, s) and Holding(Passenger, s)  => Poss(Drop(Passenger, location), s))
-Effect axiom: Poss(Drop(Passenger, location), s) => At(Passenger, location, s)
+Effect axiom: Poss(PickUp(object), s)) => Holding(object, s) and At(object, location, s) = false
 
-Possibility axiom:At(Agent, Destination(Passenger), s) and Holding(Passenger, s) => Poss(Transport(Passenger),s)
+-----------------------------------------------------------------------
+Drop(object)
+-----------------------------------------------------------------------
+Possibility axiom: At(Agent, location, s) and Destination(location) and Holding(Passenger, s) and Arrived(Passenger, S)  => Poss(Drop(Passenger, location), s))
+
+Effect axiom: Poss(Drop(Passenger, location), s) => At(Passenger, location, s) and not(Holding(Passenger, s))
+
+-----------------------------------------------------------------------
+Transport(object)
+-----------------------------------------------------------------------
+Possibility axiom:At(Agent, Location, s) and Destination(Location) and Holding(Passenger, s) => Poss(Transport(Passenger),s)
+
 Effect axiom: Poss(Transport(Passenger), s)) => Arrived(Passenger, s)
-
 
 
 -----------------------------------------------------------------------
@@ -55,18 +68,26 @@ Thing about STRIPS HERE:
 
 Successor-state axioms:
 
+-----------------------------------------------------------------------
+At(object,location, s)
+-----------------------------------------------------------------------
 Poss(a,s) => At(object, location, Result(a,s)) <=> 
        (a = Move(x,location,s) and object = Agent) or
-       (a = Move(x,location,s) and Holding(object, s) and object = Passenger) or
-       At(object, location, s) and (not a = Move(location, y, s)) and not y = location or
-       At(object, location, s) and not Holding(object, s)
+       At(object, location, s) and object = Agent and (not a = Move(location, y) or
+       At(object, location, s) and object = Passenger and (not a = PickUp(object))
 
 
+
+-----------------------------------------------------------------------
+Holding(object, s)
+-----------------------------------------------------------------------
 Poss(a,s) => Holding(passenger, Result(a,s)) <=>
         (a = PickUp(passenger)) or
         Holding(passenger, s) and not a = Drop(passenger, location))
 
-
+-----------------------------------------------------------------------
+Arrived(object, s)
+-----------------------------------------------------------------------
 Poss(a,s) => Arrived(passenger, Result(a,s)) <=> 
               a = Trasport(passenger) or Arrived(passenger, s)
 

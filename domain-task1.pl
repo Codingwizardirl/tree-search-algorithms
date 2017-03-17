@@ -45,12 +45,13 @@ primitive_action( transport(_) ).
 poss(move(X,Y), S) :- adjacent(X,Y) , at(agent, X, S).
 
 poss(pickUp(Object), S) :-
-at(Object, Location, S), at(agent, Location, S),
-not(Object = agent), not(arrived(Object, S)), not(holding(Object, S)).
+not(holding(Object, S)),  not(arrived(Object, S)),
+at(agent, Location, S), at(Object, Location, S),
+not(Object = agent).
 
-poss(drop(Passenger, Location), S) :- holding(Passenger, S), at(agent, Location, S).
+poss(drop(Passenger, Location), S) :- at(agent,Location, S), destination(Location), holding(Passenger, S), arrived(Passenger, S).
 
-poss(transport(Passenger), S) :- at(agent,destination(Passenger), S), holding(Passenger, S).
+poss(transport(Passenger), S) :- at(agent,Location, S), destination(Location), holding(Passenger, S).
 
 
 % --- Successor state axioms ------------------------------------------
@@ -61,9 +62,8 @@ poss(transport(Passenger), S) :- at(agent,destination(Passenger), S), holding(Pa
 
 at(Object, Location, result(A, S)) :-
 	(A = move(_, Location), Object = agent); 
-	(A = move(_, Location), holding(Object, S), Object = passenger); 
-	(at(Object, Location, S), not(A = move(Location, _)));
-	(at(Object, Location, S), not(holding(Object, S)), Object = passenger).
+	at(Object, Location, S), Object = agent, not(A = move(Location, _));
+	at(Object, Location, S), Object = passenger, not(A = pickUp(Object)).
 
 
 holding(Passenger, result(A, S)) :-
