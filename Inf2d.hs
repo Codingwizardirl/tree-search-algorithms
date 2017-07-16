@@ -1,17 +1,9 @@
 -- Propositional Inference
--- Informatics 2D
--- Assignment 1
--- 2016-2017
---
--- MATRIC NUMBER HERE:
---
--- Please remember to comment ALL your functions.
 
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 
 -- Module declaration and imports
--- DO NOT EDIT THIS PART --
 
 module Inf2d where
 
@@ -23,7 +15,7 @@ import Prop
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 
--- TASK 1 : Some simple functions
+-- Some simple helper functions
 
 lookupAssignment :: Symbol -> Model -> Maybe Bool
 lookupAssignment = undefined
@@ -77,7 +69,7 @@ falsifiesSentence model sentence = any (falsifiesClause model) sentence
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 
--- TASK 2 : WalkSat
+-- WalkSat
 -- List of unsatisfied clauses by the model
 unsatClauses :: Model -> Sentence -> [Clause]
 unsatClauses model sentence = filter (falsifiesClause model) sentence
@@ -95,7 +87,6 @@ maxSatClauses model sentence varList = variable
 ---------------------------------------------------------------------------
 
 -- Implementation of the WalkSat algorithm.
--- DO NOT EDIT THIS PART --
 
 walkSatRecursion :: RandomGen g => g -> Sentence -> Model -> Float -> Int -> (Maybe (Model,Int),g)
 walkSatRecursion gen sentence model _ 0
@@ -125,9 +116,9 @@ walkSat sentence prob n = do
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 
--- TASK 3 : DPLL
+-- DPLL
 
--- SECTION 7.1 : Tautology Deletion
+-- Tautology Deletion
 
 -- Checks if clause is a tautology
 isTautology :: Clause -> Bool
@@ -140,7 +131,7 @@ removeTautologies sentence = filter (not . isTautology) sentence
 
 ---------------------------------------------------------------------------
 
--- SECTION 7.2 : Pure Symbol Heuristic
+-- Pure Symbol Heuristic
 
 -- Removes clauses which are satisfied by the model from the sentence
 simplifySentence :: Model -> Sentence -> Sentence
@@ -177,7 +168,7 @@ findPureSymbol variables sentence model
           value = polarity $ fromJust pureSym
 
 
--- SECTION 7.3 : Unit Clause Heuristic
+-- Unit Clause Heuristic
 
 -- Removes symbols in the clause which are falsified by the model
 simplifyClause :: Model -> Clause -> Clause
@@ -200,7 +191,7 @@ findUnitClause sentence model
           value = polarity $ head $ simplifyClause model $ fromJust unitClause
 
 
--- SECTION 7.4 : Early Termination
+--Early Termination
 
 -- Checks whether sentence is satisfied or falsified by the given model
 earlyTerminate :: Sentence -> Model -> Bool
@@ -208,7 +199,7 @@ earlyTerminate sentence model = falsifiesSentence model sentence || satisfiesSen
 
 ---------------------------------------------------------------------------
 
--- SECTION 7.5 : DPLL algorithm
+-- DPLL algorithm
 -- Code follow pseudo code given in the book.
 -- Algorithm first checks for early termination. Then it finds all pure symbols and assigns them to true.
 -- It finds all unit clauses and assigns all symbols in there to true.
@@ -241,7 +232,6 @@ dpll heuristic ((sentence, (variables, model)):xs) i
 ---------------------------------------------------------------------------
 
 -- Provided choice function and dpll initialisation
--- DO NOT EDIT THIS PART --
 
 firstVariable :: Node -> Variable
 firstVariable (_, ([],_)) = undefined
@@ -253,7 +243,8 @@ dpllSatisfiable sentence = dpll firstVariable [(removeTautologies sentence, (var
 
 ---------------------------------------------------------------------------
 
--- TASK 4
+-- Improved heuristics for DPLL 
+-- Idea and inspiration for improvement from Branching Heuristics, Matt Ginsberg(2004) (https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume21/dixon04a-html/node8.html)
 
 -- Applies the formula (f(x) + f(-x))*2^k + f(x)*f(-x) for k = 4
 -- This is formula generally used with the MOM heuristic
@@ -288,7 +279,6 @@ variableSelectionHeuristic (sentence, (variables, model)) = chosenVariable
 ---------------------------------------------------------------------------
 
 -- Provided dpllSatisfiablev2
--- DO NOT EDIT THIS PART --
 
 dpllSatisfiablev2 :: Sentence -> (Bool, Int)
 dpllSatisfiablev2 sentence = dpll variableSelectionHeuristic [(removeTautologies sentence, (variablesOfSentence sentence, []))] 0
@@ -311,9 +301,9 @@ model3 = [AS ("p", False), AS("g", False)]
 model4 = []
 ---------------------------------------------------------------------------
 
--- TASK 5 : Evaluation
+-- Evaluation
 
--- TABLE 1 : WalkSat
+-- WalkSat
 {-
           |  p=0  | p=0.5 |  p=1  |
 ----------+-------+-------+-------+
@@ -347,58 +337,3 @@ Say10.cnf |   158  |   19   |
 -}
 ---------------------------------------------------------------------------
 
--- TASK 6 : REPORT
-
--- Do NOT exceed 1.5 A4 pages of printed plain text.
--- Write your report HERE:
-{-
-
-1. WalkSAT and DPLL
-
-a) Results obtained –
-WalkSAT - WalkSAT manage to find solutions only to the more simple SAT problems. It failed to find a model for 5 of the provided problems, while only 3 of them were not satisfiable. Given the limit of 600 flips the algorithm was more reliant on favourable randomized model and luck in flipping during the “random walk” in the situations where it occurred.  Having said that and the fact that the algorithm is not complete made all the results expected.
-
-DPLL -  DPLL managed to deduce whether a sentence is satisfiable or not in a reasonable time frame. The improved heuristic version of the algorithm performed better in all of the tests in both run time and number of time it branched. Once again results were expected.
-
-b)
-Max flips – Simply sets and upper limit on run time. In the given set a bigger number of maximum flips would have affected the algorithm positively. WalkSAT on the set of problems ran in more than reasonable time, however, failed to find model for satisfiable problems because they required more than 600 flips from the randomized model.
-A good balance between run time and found solutions in my experience is somewhere around 2500.
-
-p – The probability of performing a “random walk” has direct correlation on the run time of the algorithm given fixed maximum flips. There is a trade off between reliability and run time. For lower probability the algorithm runs slower as it has to make more educated guesses rather than just randomly picking a variable to flip. However, it produces resolutions of the SAT problems more regularly. On bigger values of p the algorithm is faster, however, produces less reliable results. It is often the case that because variables are picked randomly to be flipped the maximum number of flips is reached way before a model is produced.
-For the given fixed maximum flips of 600 a p in the range between 0 and 0.33 is favourable as it produces results in less flips and more reliably. For bigger number of maximum flips p in the range between 0.5 and 0.7 is also a good choice in my experience on the given set of problems.
-
-c)
-While both are algorithms for solving satisfiability problems they are vastly different.
-
-WalkSAT is a local search and starts from a randomly generated model and flips variable truth values until it finds a solution or exceeds a number of flips.
-DPLL is a backtrack search algorithm, which starts from an empty model and assigns truth values to variables as it progresses with the help of different techniques, such as finding pure symbols and unit clauses and assigning them true in the model.
-
-Main difference between the two algorithms is the fact that DPLL is complete while WalkSAT is not. While DPLL is always able to tell whether a problem is satisfiable (given enough time), WalkSAT is only able to say whether it can figure out a model for the problem in the time limit it has been given. In other words, DPLL is complete algorithm while WalkSAT is not.
-
-
-2. Improving the efficiency of DPLL
-
-a) My idea came from reading the course’s textbook and a couple of academic papers on branching heuristics. Heuristic is based on the Maximum Occurrences on clauses of Minimum size (MOM’s) heuristic.
-More specifically resources that I read and inspired me to come up with my idea were:
-Branching Heuristics, Matt Ginsberg(2004)
-(https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume21/dixon04a-html/node8.html)
-The Impact of Branching Heuristics in Propositional Satisfiability Algorithms,Joao Marques-Silva(https://pdfs.semanticscholar.org/c4d3/992a801af2862011e03eeabfdaa5a926393f.pdf)
-Fundaments of Branching Heuristics, Oliver Kullmann(http://cs.swan.ac.uk/~csoliver/Artikel/p01c07_heu.pdf)
-
-b)
-I implemented the heuristic by picking variable out of the list of variables in the node by choosing the  one that maximizes a score function based on MOM heuristic.
-
-Formula: (f(x) + f(-x))*2^k + f(x)*f(-x),  for k = 4 in my case.
-
-Here f(x) is a relative score of a symbol “x” by occurring in a clause. f(x) is a frequency ratio, calculated by dividing the number of times symbol “x” is found in clause C by the length of C.
-This gives more importance to the symbol found in shorter clauses.
-
-c) Heuristic improves DPLL’s performance by choosing a variable by the formula above, where we maximize the importance of maximum occurrences in clauses of minimal length.
-This variable is most likely to cause a chain of discovery of unit clauses, leading to a model. I observed a major improvement in both run time and branching factor of the algorithm given the new heuristic.
-
-d) When finding unit clauses and pure symbols, the search
-
--}
-
----------------------------------------------------------------------------
----------------------------------------------------------------------------
